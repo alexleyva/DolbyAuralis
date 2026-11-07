@@ -1,0 +1,14 @@
+{
+  "schema": "augment-thread-export/1",
+  "generatedAt": "2026-11-07T18:19:33.577Z",
+  "threads": [],
+  "totals": {
+    "threads": 0,
+    "exchanges": 0,
+    "toolCalls": 0,
+    "bytesOriginal": 0,
+    "bytesProjected": 0,
+    "truncations": 0,
+    "splitThreads": 0
+  }
+}
