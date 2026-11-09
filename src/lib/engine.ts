@@ -69,3 +69,17 @@ export function buildProfile(
     enabled,
   };
 }
+/* ─── Presets personalizados ─── */
+export type Preset = {
+  id: string;
+  name: string;
+  category: string;
+  gains: number[];
+  preamp: number;
+  virtualizer: boolean;
+  leveler: boolean;
+};
+
+export const listPresets = () => invoke<Preset[]>('list_presets');
+export const savePreset = (preset: Preset) => invoke<void>('save_preset', { preset });
+export const deletePreset = (id: string) => invoke<void>('delete_preset', { id });

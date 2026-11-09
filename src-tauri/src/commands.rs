@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
@@ -106,8 +107,6 @@ pub fn apply_profile(profile: ProfileConfig) -> Result<String, String> {
             }
         }
 
-        // Volume leveler: usa la línea completa guardada (DLL + ChunkData)
-        // para que Nova cargue con los parámetros configurados (threshold -18, gain +3...)
         if profile.leveler {
             let chunk_file = Path::new(APO_DIR).join("nova_vst.txt");
             if chunk_file.exists() {
@@ -119,7 +118,6 @@ pub fn apply_profile(profile: ProfileConfig) -> Result<String, String> {
                     }
                 }
             } else if Path::new(LOUDMAX).exists() {
-                // Fallback sin chunk (Nova con preset default)
                 s.push_str(&format!("VSTPlugin: Library \"{}\"\n", LOUDMAX));
             }
         }
@@ -133,4 +131,72 @@ pub fn apply_profile(profile: ProfileConfig) -> Result<String, String> {
     })?;
 
     Ok(config_path.to_string_lossy().to_string())
+}
+
+/* ═══════════════════════════════════════════
+   PRESETS PERSONALIZADOS (por categoría)
+   JSON en %APPDATA%\Auralis\presets.json
+   ═══════════════════════════════════════════ */
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Preset {
+    pub id: String,
+    pub name: String,
+    pub category: String,
+    pub gains: Vec<f32>,
+    pub preamp: f32,
+    pub virtualizer: bool,
+    pub leveler: bool,
+}
+
+fn presets_file() -> Result<std::path::PathBuf, String> {
+    let dir = std::env::var("APPDATA")
+        .map_err(|_| "No se pudo obtener APPDATA".to_string())?;
+    let path = std::path::PathBuf::from(dir).join("Auralis").join("presets.json");
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("No se pudo crear la carpeta: {}", e))?;
+    }
+    Ok(path)
+}
+
+fn load_presets() -> Vec<Preset> {
+    let path = match presets_file() {
+        Ok(p) => p,
+        Err(_) => return Vec::new(),
+    };
+    match fs::read_to_string(&path) {
+        Ok(content) => serde_json::from_str::<HashMap<String, serde_json::Value>>(&content)
+            .ok()
+            .and_then(|map| map.get("presets").cloned())
+            .and_then(|v| serde_json::from_value::<Vec<Preset>>(v).ok())
+            .unwrap_or_default(),
+        Err(_) => Vec::new(),
+    }
+}
+
+fn persist_presets(presets: &[Preset]) -> Result<(), String> {
+    let path = presets_file()?;
+    let content = serde_json::json!({ "version": 1, "presets": presets });
+    fs::write(&path, serde_json::to_string_pretty(&content).map_err(|e| e.to_string())?)
+        .map_err(|e| format!("No se pudo escribir presets.json: {}", e))
+}
+
+#[tauri::command]
+pub fn list_presets() -> Vec<Preset> {
+    load_presets()
+}
+
+#[tauri::command]
+pub fn save_preset(preset: Preset) -> Result<(), String> {
+    let mut all = load_presets();
+    all.retain(|p| p.id != preset.id);
+    all.push(preset);
+    persist_presets(&all)
+}
+
+#[tauri::command]
+pub fn delete_preset(id: String) -> Result<(), String> {
+    let mut all = load_presets();
+    all.retain(|p| p.id != id);
+    persist_presets(&all)
 }

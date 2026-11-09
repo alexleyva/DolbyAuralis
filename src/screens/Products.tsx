@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Headphones, Speaker, Check } from 'lucide-react';
 import headphonesImg from '../assets/sala_audifono.png';
 import speakersImg from '../assets/sala_audio.png';
+import { useI18n } from '../lib/i18n';
 
 export default function Products() {
+  const { t } = useI18n();
   const [selected, setSelected] = useState<'hp' | 'ht'>('hp');
 
   return (
@@ -44,22 +46,20 @@ export default function Products() {
           </div>
 
           <h1 className="page-title" style={{ fontSize: 34, marginBottom: 12 }}>
-            {selected === 'hp' ? 'Spatial Audio for Headphones' : 'Spatial Audio for Speakers'}
+            {selected === 'hp' ? t('products.title.hp') : t('products.title.ht')}
           </h1>
 
           <p className="badge-ready">
             <span className="dot">
               <Check size={12} strokeWidth={3.4} />
             </span>
-            Ready to use
+            {t('home.ready')}
           </p>
 
           <div className="divider" />
 
           <p className="page-desc" style={{ marginBottom: 0 }}>
-            {selected === 'hp'
-              ? 'Delivers a premium, immersive audio experience through any set of headphones, processed locally by Equalizer APO + HeSuVi.'
-              : 'Room-filling 7.1 spatial audio for your speaker setup, with per-channel distance and level calibration.'}
+            {selected === 'hp' ? t('products.desc.hp') : t('products.desc.ht')}
           </p>
         </div>
       </div>
